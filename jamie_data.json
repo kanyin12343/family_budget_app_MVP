@@ -1,0 +1,1 @@
+{"income": [{"id": 1, "source": "Salary", "amount": 1000.0, "contributor": "DAD", "planned": true, "date": "2025-11-12"}], "expenses": [], "total_income": 1000.0, "total_expense": 0, "balance": 1000.0}
