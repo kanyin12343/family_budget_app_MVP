@@ -1,9 +1,11 @@
+
 """
 Tests for the budget app.
 
 Sections:
 1) Expense model & basic API tests
 2) Epic 5 – Budget summaries & reports (stories 23–28)
+3) Epic 1 – User Accounts & Profile Management
 """
 
 from decimal import Decimal
@@ -250,3 +252,24 @@ class WhatIfSimulationTests(Epic5Base):
         self.assertEqual(Decimal(str(data["base"]["net"])), Decimal("850.00"))
         self.assertEqual(Decimal(str(data["delta"])), Decimal("50"))  # -50 + 100
         self.assertEqual(Decimal(str(data["projected_net"])), Decimal("900.00"))
+# ============================================================
+# 3) Epic 1 – User Accounts & Profile Management
+# ============================================================
+
+
+# Test written by Kanyinsola (Epic 1: User Accounts & Profile Management)
+
+
+
+class UserAccountTest(TestCase):
+    def test_user_can_register_and_login(self):
+        # ✅ Create a test user
+        user = User.objects.create_user(username="family_user", password="test1234")
+
+        # ✅ Verify the user was created
+        self.assertEqual(user.username, "family_user")
+        self.assertTrue(user.check_password("test1234"))
+
+        # ✅ Try logging in through Django’s test client
+        login_successful = self.client.login(username="family_user", password="test1234")
+        self.assertTrue(login_successful)
