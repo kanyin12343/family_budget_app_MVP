@@ -20,7 +20,9 @@ def save_user_data(username, data):
     with open(filename, "w") as f:
         json.dump(data, f)
 
-# Simulated login (stores name in session)
+# -------------------------------------------
+# LOGIN
+# -------------------------------------------
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -29,7 +31,10 @@ def login_view(request):
             return redirect('dashboard')
     return render(request, "login.html")
 
-# Dashboard now shows user-specific data
+
+# -------------------------------------------
+# DASHBOARD (Shows totals)
+# -------------------------------------------
 def dashboard_view(request):
     username = request.session.get('username', None)
     if not username:
@@ -45,7 +50,10 @@ def dashboard_view(request):
     }
     return render(request, "dashboard.html", context)
 
-# Add income to user-specific file
+
+# -------------------------------------------
+# ADD INCOME (EPIC 2)
+# -------------------------------------------
 def add_income_view(request):
     username = request.session.get('username', None)
     if not username:
@@ -54,18 +62,36 @@ def add_income_view(request):
     if request.method == "POST":
         source = request.POST.get("source")
         amount = request.POST.get("amount")
+        contributor = request.POST.get("contributor")
+        planned = request.POST.get("planned") == "on"
+        date = request.POST.get("date")
+
         if source and amount:
             user_data = load_user_data(username)
-            income_item = {"source": source, "amount": float(amount)}
-            user_data["income"].append(income_item)
+
+            new_entry = {
+                "id": len(user_data["income"]) + 1,
+                "source": source,
+                "amount": float(amount),
+                "contributor": contributor,
+                "planned": planned,
+                "date": date
+            }
+
+            user_data["income"].append(new_entry)
             user_data["total_income"] += float(amount)
             user_data["balance"] = user_data["total_income"] - user_data["total_expense"]
+
             save_user_data(username, user_data)
+
             return redirect('dashboard')
 
     return render(request, "add_income.html", {"username": username})
 
-# Add expense to user-specific file
+
+# -------------------------------------------
+# ADD EXPENSE
+# -------------------------------------------
 def add_expense_view(request):
     username = request.session.get('username', None)
     if not username:
@@ -85,7 +111,10 @@ def add_expense_view(request):
 
     return render(request, "add_expense.html", {"username": username})
 
-# Optional: personalized summary view
+
+# -------------------------------------------
+# SUMMARY PAGE
+# -------------------------------------------
 def summary_view(request):
     username = request.session.get('username', None)
     if not username:
@@ -102,3 +131,78 @@ def summary_view(request):
         "balance": user_data["balance"],
     }
     return render(request, "summary.html", context)
+
+
+# =================================================================
+#                   EPIC 2 — INCOME MANAGEMENT
+# =================================================================
+
+# -------------------------------------------
+# VIEW INCOME LIST
+# -------------------------------------------
+def view_income(request):
+    username = request.session.get('username')
+    if not username:
+        return redirect('login')
+
+    user_data = load_user_data(username)
+    return render(request, "view_income.html", {
+        "username": username,
+        "incomes": user_data["income"],
+    })
+
+
+# -------------------------------------------
+# EDIT INCOME
+# -------------------------------------------
+def edit_income(request, income_id):
+    username = request.session.get('username')
+    if not username:
+        return redirect('login')
+
+    user_data = load_user_data(username)
+
+    # Find entry
+    income_item = next((i for i in user_data["income"] if i["id"] == income_id), None)
+    if not income_item:
+        return redirect('view_income')
+
+    if request.method == "POST":
+        income_item["source"] = request.POST.get("source")
+        income_item["amount"] = float(request.POST.get("amount"))
+        income_item["contributor"] = request.POST.get("contributor")
+        income_item["planned"] = request.POST.get("planned") == "on"
+        income_item["date"] = request.POST.get("date")
+
+        # Recalculate totals
+        user_data["total_income"] = sum(i["amount"] for i in user_data["income"])
+        user_data["balance"] = user_data["total_income"] - user_data["total_expense"]
+
+        save_user_data(username, user_data)
+        return redirect('view_income')
+
+    return render(request, "edit_income.html", {
+        "username": username,
+        "income": income_item,
+    })
+
+
+# -------------------------------------------
+# DELETE INCOME
+# -------------------------------------------
+def delete_income(request, income_id):
+    username = request.session.get('username')
+    if not username:
+        return redirect('login')
+
+    user_data = load_user_data(username)
+
+    user_data["income"] = [i for i in user_data["income"] if i["id"] != income_id]
+
+    # Recalculate totals
+    user_data["total_income"] = sum(i["amount"] for i in user_data["income"])
+    user_data["balance"] = user_data["total_income"] - user_data["total_expense"]
+
+    save_user_data(username, user_data)
+
+    return redirect('view_income')
