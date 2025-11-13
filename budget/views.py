@@ -61,13 +61,18 @@ def add_expense_view(request):
         if category and amount:
             try:
                 amount_float = float(amount)
-                total_income = sum(i.amount for i in Income.objects.all())
-                total_expense = sum(e.amount for e in Expense.objects.all())
-
-                if total_expense + amount_float > total_income:
+                user_data = load_user_data(username)
+                
+                # Budget validation using JSON data
+                if user_data["total_expense"] + amount_float > user_data["total_income"]:
                     error_message = "Error: Expense exceeds your available budget!"
                 else:
-                    Expense.objects.create(category=category, amount=amount_float)
+                    # Add expense to user's JSON data
+                    expense_item = {"category": category, "amount": amount_float}
+                    user_data["expenses"].append(expense_item)
+                    user_data["total_expense"] += amount_float
+                    user_data["balance"] = user_data["total_income"] - user_data["total_expense"]
+                    save_user_data(username, user_data)
                     return redirect('dashboard')
             except ValueError:
                 error_message = "Invalid amount entered."
